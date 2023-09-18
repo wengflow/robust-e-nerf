@@ -3,12 +3,10 @@
 [![Project Page](https://img.shields.io/badge/Project_Page-black?style=for-the-badge
 )](https://wengflow.github.io/robust-e-nerf) &nbsp; [![arXiv](https://img.shields.io/badge/arXiv-black?style=for-the-badge)](https://arxiv.org/abs/2309.08596) &nbsp; [![Simulator](https://img.shields.io/badge/Simulator-black?style=for-the-badge)](https://github.com/wengflow/rpg_esim) &nbsp; [![Dataset](https://img.shields.io/badge/Dataset-black?style=for-the-badge)](https://huggingface.co/datasets/wengflow/robust-e-nerf)
 
-<table>
-    <tr>
-        <td><img src="assets/comparison.gif" alt="Comparison"/></td>
-        <td><img src="assets/results%20(square).gif" alt="Results"/></td>
-    </tr>
-</table>
+<p align="center">
+   <img src="assets/comparison.gif" alt="Comparison" width="58%"/>
+   <img src="assets/results%20(square).gif" alt="Results" width="38%"/>
+</p>
 
 This repository contains the source code for the ICCV 2023 paper — [Robust *e*-NeRF: NeRF from Sparse & Noisy Events under Non-Uniform Motion](https://arxiv.org/abs/2309.08596), which is mainly built on the PyTorch Lightning framework. Robust *e*-NeRF is a novel method to directly and robustly reconstruct NeRFs from moving event cameras under various real-world conditions, especially from sparse and noisy events generated under non-uniform motion.
 
@@ -38,11 +36,11 @@ If a manual installation is preferred, the list of dependencies can be found in 
 
 ### Robust *e*-NeRF Synthetic Dataset
 
-Our synthetic experiments are performed on a set of sequences simulated using an [improved ESIM](https://github.com/wengflow/rpg_esim) event camera simulator with different camera configurations on NeRF Realistic Synthetic 360$\degree$ scenes. In our [Robust *e*-NeRF Synthetic Event Dataset](https://huggingface.co/datasets/wengflow/robust-e-nerf), we provide the simulated sequences used to study the collective effect of camera speed profile, contrast threshold variation and refractory period. Minor modifications to the ESIM configuration files provided in the dataset enables the simulation of other sequences used in our synthetic experiments.
+Our synthetic experiments are performed on a set of sequences simulated using an [improved ESIM](https://github.com/wengflow/rpg_esim) event camera simulator with different camera configurations on NeRF Realistic Synthetic $360\degree$ scenes. In our [Robust *e*-NeRF Synthetic Event Dataset](https://huggingface.co/datasets/wengflow/robust-e-nerf), we provide the simulated sequences used to study the collective effect of camera speed profile, contrast threshold variation and refractory period. Minor modifications to the ESIM configuration files provided in the dataset enables the simulation of other sequences used in our synthetic experiments.
 
 To run Robust *e*-NeRF on our synthetic dataset:
 
-1. Setup the dataset according to the [official instructions](https://github.com/wengflow/robust-e-nerf#Setup)
+1. Setup the dataset according to the [official instructions](https://huggingface.co/datasets/wengflow/robust-e-nerf#setup)
 2. Preprocess each sequence in the raw dataset with:
    ```bash
    python scripts/preprocess_esim.py <sequence_path>/esim.conf <sequence_path>/esim.bag <sequence_path>
