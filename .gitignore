@@ -1,0 +1,5 @@
+.vscode
+.ipynb_checkpoints
+*.code-workspace
+**/__pycache__/
+logs/

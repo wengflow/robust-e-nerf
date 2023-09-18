@@ -1,0 +1,163 @@
+---
+seed:                                       # [H] { <int>, <empty> (randomly selected) }
+float32_matmul_precision: highest           #     { highest, high, medium }
+eval_target: [ novel_view ]                 #     { [ event_view ], [ novel_view ] }
+
+data:
+  dataset_directory: /data/wflow/datasets/tum-vie/mocap-desk2
+  train_dataset_ratio: 1.0                  #     { <int> (number of train effective batches),
+                                            #       [0.0, 1.0] (fraction of train dataset) }
+  val_dataset_ratio: 50                     #     { <int> (number of validation effective batches),
+                                            #       [0.0, 1.0] (fraction of validation dataset) }
+  test_dataset_ratio: 1.0                   #     { <int> (number of test effective batches),
+                                            #       [0.0, 1.0] (fraction of test dataset) }
+  train_dataset_perm_seed:                  #     { <empty> (no permutation), <int> }
+  eval_dataset_perm_seed: 3                 #     { <empty> (no permutation), <int> }
+
+  alpha_over_white_bg: false                # [H] { false, true }
+  train_init_eff_batch_size: 1024           # [H] multiple of total number of gpus across all nodes
+  train_eff_ray_sample_batch_size: 1048576  # [H] multiple of total number of gpus across all nodes
+  val_eff_batch_size: 1                     #     multiple of total number of gpus across all nodes
+  test_eff_batch_size: 1                    #     multiple of total number of gpus across all nodes
+  num_workers_per_node: 0                   #     multiple of number of gpus per node
+
+model:
+  min_modeled_intensity: 0.001              # [H] should not be too small, else the log intensity gradients will
+                                            #     be too large for small intensities
+  eval_save_pred_intensity_img: false       #     { false, true }
+  checkpoint_filepath:                      # [H] { <empty>, <str> }
+
+  # model-component configs
+  contrast_threshold:
+    load_state_dict: false                  # [H] { false, true (`model.checkpoint_filepath` must not be empty) }
+    freeze: false                           # [H] { false, true }
+  refractory_period:
+    load_state_dict: false                  # [H] { false, true (`model.checkpoint_filepath` must not be empty) }
+    freeze: false                           # [H] { false, true }
+  nerf:
+    aabb: [  0.5, -2.1,  0.6,               # [H] { <list of min-max coordinates>, auto }
+             2.0, -0.6,  1.6  ]
+    contraction_type: sphere                # [H] { aabb, sphere, tanh }
+    occ_grid:
+      resolution: 256                       # [H]
+      occ_thre: 1.0e-2                      # [H]
+      ema_decay: 0.95                       # [H]
+      warmup_steps: 256                     # [H]
+      n: 16                                 # [H]
+    near_plane: 0.05                        # [H] { <empty> (none), <float> }
+    far_plane: 3.0                          # [H] { <empty> (none), <float> }
+    render_step_size: auto                  # [H] { <float> (manual), auto (derived with max. 1024 samples per ray 
+                                            #       within the bounding square AABB) }
+    cone_angle: 0.004                       # [H]
+    early_stop_eps: 1.0e-4                  # [H]
+    alpha_thre: 0                           # [H]
+    test_chunk_size: 16384                  # [H]
+    
+    arch: ngp                               # [H] { ngp, mlp }
+    load_state_dict: false                  # [H] { false, true (`model.checkpoint_filepath` must not be empty) }
+    freeze: false                           # [H] { false, true (`model.nerf.load_state_dict` must be true) }
+
+    # architecture-dependent configs
+    ngp:
+      pos_encoding:
+        otype: HashGrid                     # [H] { HashGrid, DenseGrid, TiledGrid }
+        n_levels: 16                        # [H]
+        n_features_per_level: 2             # [H]
+        log2_hashmap_size: 19               # [H] only applicable if `otype` is `HashGrid`
+        base_resolution: 16                 # [H]
+        per_level_scale: 1.4472692012786865 # [H]
+        interpolation: Linear               # [H] { Linear, Smoothstep, Nearest }
+      dir_encoding:
+        degree: 4                           # [H]
+      mlp_base:
+        hidden_activation: softplus         # [H] { softplus, relu }
+        density_activation: shifted_trunc_exp # [H] { shifted_trunc_exp, softplus, shifted_softplus }
+        n_neurons: 64                       # [H]
+        n_hidden_layers: 1                  # [H]
+        geo_feat_dim: 15                    # [H]
+        weight_norm: false                  # [H]
+      mlp_head:
+        hidden_activation: softplus         # [H] { softplus, relu }
+        radiance_activation: softplus       # [H] { softplus, sigmoid }
+        n_neurons: 64                       # [H]
+        n_hidden_layers: 2                  # [H]
+        weight_norm: false                  # [H]
+    mlp:
+      net_depth: 8                          # [H]
+      net_width: 256                        # [H]
+      skip_layer: 4                         # [H]
+      net_depth_condition: 1                # [H]
+      net_width_condition: 128              # [H]
+      hidden_activation: softplus           # [H] { softplus, relu }
+      density_activation: shifted_trunc_exp # [H] { shifted_trunc_exp, softplus, shifted_softplus }
+      radiance_activation: softplus         # [H] { <empty>, softplus, sigmoid }
+      pos_encoder_max_deg: 10               # [H]
+      view_encoder_max_deg: 4               # [H]
+      weight_norm: false                    # [H]
+
+loss:
+  error_fn:
+    log_intensity_grad: mape                # [H] { l1, mse, mape }
+    log_intensity_diff: mse                 # [H] { l1, mse, mape }
+  weight:
+    log_intensity_grad: 1.0e-3              # [H]
+    log_intensity_diff: 1.0                 # [H]
+    nerf_mlp_weight_decay: 1.0e-6           # [H]
+  param_weight:
+    log_intensity_grad:                     # [H] { <empty>, mean_contrast_reciprocal, mean_contrast_reciprocal_sq }
+    log_intensity_diff: mean_contrast_reciprocal_sq # [H] { <empty>, mean_contrast_reciprocal, mean_contrast_reciprocal_sq }
+
+metric:
+  lpips_net: "alex"                         #     { alex, vgg, squeeze }
+
+optimizer:
+  algo: adam                                # [H] { adam }
+  lr:
+    contrast_threshold: 0.1                 # [H]
+    default: 0.01                           # [H]
+  relative_lr:
+    refractory_period: 50                   # [H]
+
+lr_scheduler:
+  algo: multi_step_lr                       # [H] { multi_step_lr }
+  interval: epoch                           # [H] { epoch, step }
+
+  # algorithm-dependent configs
+  multi_step_lr:
+    milestones: [ 20, 30, 36 ]              # [H]
+    gamma: 0.33                             # [H]
+
+logger:
+  save_dir: /data/wflow/dev/robust-e-nerf/logs
+  name: "train/tum-vie/mocap-desk2/ct_freeze=false/refr_freeze=false"
+  version:
+
+checkpoint:
+  dirpath:
+  monitor:
+  mode: "min"
+  save_top_k: 1
+  save_weights_only: false
+  every_n_epochs: 1
+
+trainer:
+  num_nodes: 1
+  gpus: [ 0 ]                               #     { <empty> (CPU), <list of gpu ids> (GPU) }. Same across all nodes.
+                                            #     For testing, the total number of gpus across all nodes must be a
+                                            #     factor of the length of the testing dataset
+  accelerator:                              #     { <empty> (single CPU/GPU), ddp (GPU), ddp_spawn (GPU) }
+
+  max_epochs: 40
+  log_every_n_steps: 100
+  check_val_every_n_epoch: 4
+  flush_logs_every_n_steps: 500
+  val_check_interval: 1.0
+  limit_train_batches: 1000
+
+  # for debugging purposes
+  # logger: false
+  # checkpoint_callback: false
+
+  # other useful options
+  # resume_from_checkpoint:
+  # accumulate_grad_batches:
